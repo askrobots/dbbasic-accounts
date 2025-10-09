@@ -1,5 +1,8 @@
 # dbbasic-accounts
 
+[![PyPI version](https://badge.fury.io/py/dbbasic-accounts.svg)](https://badge.fury.io/py/dbbasic-accounts)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+
 Unix-style user accounts with web-friendly API and filesystem integration.
 
 > "The web forked from Unix. Let's merge it back."
@@ -24,6 +27,10 @@ Docker = isolated Unix system per app. Each container can have its own `/etc/pas
 ```bash
 pip install dbbasic-accounts
 ```
+
+**PyPI**: [https://pypi.org/project/dbbasic-accounts/](https://pypi.org/project/dbbasic-accounts/)
+
+**GitHub**: [https://github.com/askrobots/dbbasic-accounts](https://github.com/askrobots/dbbasic-accounts)
 
 ## Quick Start
 
