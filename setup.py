@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="dbbasic-accounts",
-    version="0.1.0",
+    version="0.1.1",
     description="Unix-style user accounts with web-friendly API - file system integration included",
     author="Dan Q",
     packages=find_packages(),
