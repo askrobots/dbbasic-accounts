@@ -385,6 +385,146 @@ admins	102	john
 - **shadow.tsv permissions**: Automatically set to 0600 (owner read/write only) on Unix
 - **No plaintext passwords**: Passwords never stored in plaintext
 
+## FAQ
+
+### Why passwords instead of passkeys/WebAuthn?
+
+**Short answer**: Passwords with strong hashing (Argon2id) are simpler, more portable, and sufficient for most applications.
+
+**Longer answer**:
+
+Passkeys/WebAuthn solve specific problems at scale (phishing, credential stuffing) that are most relevant to large platforms. For individual applications and smaller services, traditional password authentication offers several advantages:
+
+**Advantages of password authentication**:
+- **Universal compatibility**: Works everywhere (browsers, mobile apps, APIs, CLI tools)
+- **User control**: Users can store passwords however they prefer (memory, password manager, written down)
+- **Simple recovery**: Standard email-based password reset flows
+- **No device dependencies**: Not tied to specific hardware or platform vendors
+- **Developer simplicity**: Straightforward implementation without WebAuthn complexity
+- **Offline capable**: Can work without internet connectivity
+- **Cross-platform**: Not dependent on Apple/Google/Microsoft ecosystems
+
+**When you might want passkeys**:
+- You're operating at massive scale (millions of users)
+- Phishing is a primary threat vector for your specific use case
+- You have resources to implement and maintain WebAuthn
+- Your users are technical enough to manage device-based credentials
+- You can support the full recovery/backup flow
+
+**What dbbasic-accounts provides**:
+- Industry-standard Argon2id hashing (same security as modern systems)
+- Simple, auditable implementation
+- Full control over your authentication system
+- Easy integration with existing 2FA/TOTP if you need additional security
+
+### Can I add 2FA/TOTP?
+
+Yes! dbbasic-accounts handles password authentication. You can layer TOTP (Time-based One-Time Passwords) on top:
+
+```python
+import pyotp
+
+# During registration
+totp_secret = pyotp.random_base32()
+# Store totp_secret with user (add field to passwd.tsv or separate file)
+
+# During login
+user = accounts.login(email, password)
+if user:
+    totp = pyotp.TOTP(user_totp_secret)
+    if totp.verify(user_provided_code):
+        # Grant access
+```
+
+Popular 2FA libraries: `pyotp`, `oath`
+
+### Can I use OAuth/SSO (Login with Google, etc)?
+
+Yes! You can use dbbasic-accounts alongside OAuth:
+
+```python
+# OAuth flow
+oauth_user_info = google_oauth_callback()
+
+# Create/get user in your system
+user = accounts.get_user(email=oauth_user_info['email'])
+if not user:
+    # Create user without password (or with random password)
+    user = accounts.register(
+        oauth_user_info['email'],
+        password=secrets.token_urlsafe(32),  # Random, unused password
+        name=oauth_user_info['name']
+    )
+
+# User is now in your system
+session['user_id'] = user.uid
+```
+
+### Is this secure enough for production?
+
+Yes, with proper deployment:
+
+**dbbasic-accounts provides**:
+- Argon2id password hashing (current best practice)
+- Secure password storage (shadow.tsv with restricted permissions)
+- Protection against timing attacks (Argon2 built-in)
+
+**You should also**:
+- Use HTTPS (TLS/SSL) for all traffic
+- Implement rate limiting on login attempts
+- Use secure session management (httponly, secure cookies)
+- Consider adding 2FA for sensitive applications
+- Regular backups of your TSV files
+- Keep shadow.tsv permissions at 0600
+
+### How does this compare to Firebase Auth, Auth0, etc?
+
+**SaaS Auth Services** (Firebase, Auth0, Supabase):
+- ✅ Managed service, less operational work
+- ✅ Built-in OAuth providers
+- ❌ Monthly costs scale with users
+- ❌ Vendor lock-in
+- ❌ External dependency (outages affect you)
+- ❌ Your user data on their servers
+
+**dbbasic-accounts**:
+- ✅ Zero monthly costs
+- ✅ Full control over user data
+- ✅ No external dependencies
+- ✅ Simple, auditable code
+- ✅ Easy to migrate or modify
+- ❌ You handle operational aspects
+- ❌ OAuth requires custom integration
+
+**Best fit**: Self-hosted apps, internal tools, indie projects, anything where you want full control and simplicity over managed service convenience.
+
+### Can I migrate from WordPress/Django/etc?
+
+The Unix layer (PasswdDB) is designed to be migration-friendly. You can write scripts to import users:
+
+```python
+from dbbasic_accounts import Accounts
+
+accounts = Accounts('./data')
+
+# Import from existing database
+for user_row in old_database.get_users():
+    try:
+        # Create user with temporary password
+        accounts.register(
+            user_row['email'],
+            password=generate_temp_password(),
+            name=user_row['name']
+        )
+        # Send password reset email
+        send_password_reset(user_row['email'])
+    except ValueError:
+        # User already exists
+        pass
+```
+
+Note: Old password hashes (bcrypt, MD5, etc) can't be directly imported. Users need to reset passwords.
+
 ## Requirements
 
 - Python 3.8+
